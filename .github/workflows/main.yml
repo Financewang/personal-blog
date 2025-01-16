@@ -3,8 +3,7 @@ name: Deploy Next.js to GitHub Pages
 on:
   push:
     branches:
-      - main  # 监听 main 分支的变动
-  pull_request:
+      - main
 
 jobs:
   build-and-deploy:
@@ -16,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20  # 确保使用 Next.js 支持的 Node.js 版本
+          node-version: '16'
 
       - name: Install dependencies
         run: npm install
@@ -31,4 +30,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out  # Next.js 导出的静态文件目录
+          publish_dir: ./out
