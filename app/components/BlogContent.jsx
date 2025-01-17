@@ -35,13 +35,10 @@ export default function BlogContent() {
       formData.append('image', file);
 
       try {
-        const response = await fetch(
-          'https://api.imgbb.com/1/upload?key=8c7235625529ffdc69f7130dac3647cc',
-          {
-            method: 'POST',
-            body: formData,
-          }
-        );
+        const response = await fetch('https://api.imgbb.com/1/upload?key=8c7235625529ffdc69f7130dac3647cc', {
+          method: 'POST',
+          body: formData,
+        });
 
         const data = await response.json();
         if (data.success) {
@@ -96,18 +93,42 @@ export default function BlogContent() {
 
   const filteredEntries = activeFilter === 'all' ? entries : entries.filter((entry) => entry.category === activeFilter);
 
+  const renderVideoEmbed = (url) => {
+    if (!url) return null;
+
+    let embedUrl;
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const videoId = url.split('v=')[1] || url.split('/').pop();
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (url.includes('bilibili.com')) {
+      const bvid = url.split('/').pop();
+      embedUrl = `https://player.bilibili.com/player.html?bvid=${bvid}`;
+    }
+
+    return embedUrl ? (
+      <iframe
+        width="100%"
+        height="400"
+        src={embedUrl}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    ) : null;
+  };
+
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      <nav className="border-b fixed w-full bg-white z-50 shadow">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Finance Wang's Blog</h1>
-          <div className="flex items-center space-x-4 overflow-auto">
+    <div className="min-h-screen bg-white">
+      <nav className="border-b fixed w-full bg-white z-50">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between flex-wrap">
+          <h1 className="text-lg sm:text-xl font-medium whitespace-nowrap mb-2 sm:mb-0">Finance Wang's Blog</h1>
+          <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => setActiveFilter(category.id)}
-                className={`text-sm sm:text-base px-3 py-1 rounded-lg ${
-                  activeFilter === category.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+                className={`text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors ${
+                  activeFilter === category.id ? 'text-gray-900 font-semibold' : ''
                 }`}
               >
                 {category.name}
@@ -115,8 +136,8 @@ export default function BlogContent() {
             ))}
             <button
               onClick={() => setActiveFilter('all')}
-              className={`text-sm sm:text-base px-3 py-1 rounded-lg ${
-                activeFilter === 'all' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+              className={`text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors ${
+                activeFilter === 'all' ? 'text-gray-900 font-semibold' : ''
               }`}
             >
               全部
@@ -125,28 +146,28 @@ export default function BlogContent() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 pt-24">
-        <Card className="mb-12 border shadow-sm">
-          <CardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-12 pt-24">
+        <Card className="mb-12 border-0 shadow-sm">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <input
                 type="text"
                 value={currentEntry.title}
                 onChange={(e) => setCurrentEntry({ ...currentEntry, title: e.target.value })}
-                className="w-full px-3 py-2 sm:py-3 border rounded-lg"
+                className="w-full p-3 text-lg border-0 border-b focus:ring-0 focus:border-gray-900 transition-colors"
                 placeholder="标题"
               />
               <textarea
                 value={currentEntry.content}
                 onChange={(e) => setCurrentEntry({ ...currentEntry, content: e.target.value })}
-                className="w-full px-3 py-2 sm:py-3 border rounded-lg min-h-[80px]"
+                className="w-full p-3 min-h-32 border rounded-lg focus:ring-0 focus:border-gray-900 transition-colors"
                 placeholder="写点什么..."
               />
-              <div className="flex flex-wrap gap-2 sm:gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <select
                   value={currentEntry.category}
                   onChange={(e) => setCurrentEntry({ ...currentEntry, category: e.target.value })}
-                  className="border rounded-lg px-2 py-1 sm:px-3 sm:py-2"
+                  className="border rounded-lg p-2"
                 >
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
@@ -162,24 +183,77 @@ export default function BlogContent() {
                   multiple
                   onChange={(e) => handleImageUpload(e.target.files)}
                 />
-                <Button type="button" onClick={() => fileInputRef.current.click()}>
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current.click()}>
+                  <Image size={16} className="mr-2" />
                   添加图片
                 </Button>
-                <Button type="button" onClick={handleVideoUrlAdd}>
+                <Button type="button" variant="outline" onClick={handleVideoUrlAdd}>
+                  <Video size={16} className="mr-2" />
                   添加视频
                 </Button>
-                <Button type="submit">{editIndex === -1 ? '发布' : '更新'}</Button>
+                <Button type="submit" className="w-32">
+                  {editIndex === -1 ? '发布' : '更新'}
+                </Button>
               </div>
+              {currentEntry.images.length > 0 && (
+                <div className="flex flex-wrap gap-4 mt-4">
+                  {currentEntry.images.map((url, index) => (
+                    <img key={index} src={url} alt={`预览图 ${index + 1}`} className="w-24 h-24 object-cover rounded" />
+                  ))}
+                </div>
+              )}
+              {currentEntry.videoUrl && renderVideoEmbed(currentEntry.videoUrl)}
             </form>
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {filteredEntries.map((entry) => (
-            <article key={entry.id} className="p-4 border rounded-lg">
-              <h2 className="text-lg font-bold">{entry.title}</h2>
-              <p className="text-gray-600 text-sm mb-2">{entry.date}</p>
-              <p>{entry.content}</p>
+        <div className="space-y-8">
+          {filteredEntries.map((entry, index) => (
+            <article key={entry.id} className="p-6 bg-white rounded-lg border border-gray-100">
+              <header className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-medium mb-2">{entry.title}</h2>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      {entry.date}
+                    </span>
+                    <span className="px-2 py-1 bg-gray-50 rounded">{categories.find((c) => c.id === entry.category)?.name}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCurrentEntry({ ...entries[index] });
+                      setEditIndex(index);
+                    }}
+                  >
+                    <Edit size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const updatedEntries = entries.filter((_, i) => i !== index);
+                      setEntries(updatedEntries);
+                    }}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </header>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+              {entry.images?.length > 0 && (
+                <div className="flex flex-wrap gap-4 mt-4">
+                  {entry.images.map((url, idx) => (
+                    <img key={idx} src={url} alt={`图片 ${idx + 1}`} className="max-w-full h-auto rounded" />
+                  ))}
+                </div>
+              )}
+              {entry.videoUrl && renderVideoEmbed(entry.videoUrl)}
             </article>
           ))}
         </div>
