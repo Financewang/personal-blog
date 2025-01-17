@@ -6,19 +6,15 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-      },
-    },
+  extend: {
     screens: {
-      sm: "640px", // 针对小屏幕设备
-      md: "768px", // 针对平板设备
-      lg: "1024px", // 针对大屏幕设备
-      xl: "1280px", // 更大屏幕设备
-      "2xl": "1536px", // 超大屏幕设备
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
     },
   },
+},
   plugins: [],
 };
