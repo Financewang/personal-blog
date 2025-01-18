@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { useAuth } from '../contexts/AuthContext'; // 确保路径正确
+import { useAuth } from '../../contexts/AuthContext'; // 确保路径正确
 
 const Navbar = () => {
   const { isAuthenticated, logout } = useAuth(); // 判断是否登录
