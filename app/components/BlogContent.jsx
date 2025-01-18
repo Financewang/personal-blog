@@ -1,17 +1,10 @@
 'use client';
-import React, { useState, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Edit, Mail, MessageCircle, Send, Twitter, Trash2, Image, Video } from 'lucide-react';
-
-const categories = [
-  { id: 'personal', name: '个人记录' },
-  { id: 'financial', name: '财务管理' },
-  { id: 'startup', name: '创业' },
-  { id: 'thoughts', name: '思考' },
-];
+import Login from './Login';
 
 export default function BlogContent() {
+  const [token, setToken] = useState(null);
   const [entries, setEntries] = useState([]);
   const [currentEntry, setCurrentEntry] = useState({
     content: '',
@@ -20,68 +13,56 @@ export default function BlogContent() {
     images: [],
     videoUrl: '',
   });
-  const [editIndex, setEditIndex] = useState(-1);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [currentComment, setCurrentComment] = useState('');
   const fileInputRef = useRef(null);
 
-  const handleImageUpload = async (files) => {
-    for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('图片大小不能超过5MB');
-        continue;
-      }
-
-      const formData = new FormData();
-      formData.append('image', file);
-
-      try {
-        const response = await fetch('https://api.imgbb.com/1/upload?key=8c7235625529ffdc69f7130dac3647cc', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          setCurrentEntry((prev) => ({
-            ...prev,
-            images: [...prev.images, data.data.url],
-          }));
-        }
-      } catch (error) {
-        console.error('上传图片失败:', error);
-        alert('上传图片失败，请重试');
-      }
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      setToken(savedToken);
     }
-  };
+  }, []);
 
-  const handleVideoUrlAdd = () => {
-    const url = prompt('请输入视频链接(支持 YouTube, Bilibili):');
-    if (url) {
-      setCurrentEntry((prev) => ({
-        ...prev,
-        videoUrl: url,
-      }));
+  // 获取所有博客
+  useEffect(() => {
+    if (token) {
+      fetch('http://localhost:5000/api/posts')
+        .then((response) => response.json())
+        .then((data) => setEntries(data))
+        .catch((error) => console.error('获取博客失败:', error));
     }
-  };
+  }, [token]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (currentEntry.content.trim() === '' || currentEntry.title.trim() === '') return;
+    if (!token || currentEntry.content.trim() === '' || currentEntry.title.trim() === '') return;
 
     const newEntry = {
-      id: Date.now(),
       ...currentEntry,
       date: new Date().toLocaleDateString('zh-CN'),
     };
 
-    if (editIndex === -1) {
-      setEntries([newEntry, ...entries]);
-    } else {
-      const updatedEntries = [...entries];
-      updatedEntries[editIndex] = newEntry;
-      setEntries(updatedEntries);
-      setEditIndex(-1);
+    try {
+      const response = await fetch('http://localhost:5000/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(newEntry),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('博客发布成功');
+        setEntries([data, ...entries]);
+      } else {
+        alert('博客发布失败');
+      }
+    } catch (err) {
+      console.error('发布博客失败:', err);
+      alert('发布博客失败');
     }
+
     setCurrentEntry({
       content: '',
       title: '',
@@ -91,173 +72,133 @@ export default function BlogContent() {
     });
   };
 
-  const filteredEntries = activeFilter === 'all' ? entries : entries.filter((entry) => entry.category === activeFilter);
-
-  const renderVideoEmbed = (url) => {
-    if (!url) return null;
-
-    let embedUrl;
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const videoId = url.split('v=')[1] || url.split('/').pop();
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('bilibili.com')) {
-      const bvid = url.split('/').pop();
-      embedUrl = `https://player.bilibili.com/player.html?bvid=${bvid}`;
+  const handleLike = async (postId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/like`, {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setEntries(entries.map((entry) => (entry.id === postId ? data : entry)));
+      }
+    } catch (err) {
+      console.error('点赞失败:', err);
+      alert('点赞失败');
     }
-
-    return embedUrl ? (
-      <iframe
-        width="100%"
-        height="400"
-        src={embedUrl}
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    ) : null;
   };
+
+  const handleCommentSubmit = async (postId) => {
+    if (currentComment.trim() === '') return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: currentComment }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setEntries(entries.map((entry) => (entry.id === postId ? data : entry)));
+        setCurrentComment('');
+      }
+    } catch (err) {
+      console.error('评论失败:', err);
+      alert('评论失败');
+    }
+  };
+
+  if (!token) {
+    return <Login onLogin={(token) => setToken(token)} />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="border-b fixed w-full bg-white z-50">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between flex-wrap">
-          <h1 className="text-lg sm:text-xl font-medium whitespace-nowrap mb-2 sm:mb-0">Finance Wang's Blog</h1>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveFilter(category.id)}
-                className={`text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors ${
-                  activeFilter === category.id ? 'text-gray-900 font-semibold' : ''
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-            <button
-              onClick={() => setActiveFilter('all')}
-              className={`text-sm sm:text-base text-gray-600 hover:text-gray-900 transition-colors ${
-                activeFilter === 'all' ? 'text-gray-900 font-semibold' : ''
-              }`}
-            >
-              全部
-            </button>
-          </div>
-        </div>
-      </nav>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input
+          type="text"
+          value={currentEntry.title}
+          onChange={(e) => setCurrentEntry({ ...currentEntry, title: e.target.value })}
+          className="w-full p-3 text-lg border-0 border-b focus:ring-0 focus:border-gray-900 transition-colors"
+          placeholder="标题"
+        />
+        <textarea
+          value={currentEntry.content}
+          onChange={(e) => setCurrentEntry({ ...currentEntry, content: e.target.value })}
+          className="w-full p-3 min-h-32 border rounded-lg focus:ring-0 focus:border-gray-900 transition-colors"
+          placeholder="写点什么..."
+        />
+        <Button type="submit" className="w-32">
+          发布
+        </Button>
+      </form>
 
-      <main className="max-w-4xl mx-auto px-4 py-12 pt-24">
-        <Card className="mb-12 border-0 shadow-sm">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <input
-                type="text"
-                value={currentEntry.title}
-                onChange={(e) => setCurrentEntry({ ...currentEntry, title: e.target.value })}
-                className="w-full p-3 text-lg border-0 border-b focus:ring-0 focus:border-gray-900 transition-colors"
-                placeholder="标题"
-              />
-              <textarea
-                value={currentEntry.content}
-                onChange={(e) => setCurrentEntry({ ...currentEntry, content: e.target.value })}
-                className="w-full p-3 min-h-32 border rounded-lg focus:ring-0 focus:border-gray-900 transition-colors"
-                placeholder="写点什么..."
-              />
-              <div className="flex gap-4 flex-wrap">
-                <select
-                  value={currentEntry.category}
-                  onChange={(e) => setCurrentEntry({ ...currentEntry, category: e.target.value })}
-                  className="border rounded-lg p-2"
-                >
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleImageUpload(e.target.files)}
-                />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current.click()}>
-                  <Image size={16} className="mr-2" />
-                  添加图片
-                </Button>
-                <Button type="button" variant="outline" onClick={handleVideoUrlAdd}>
-                  <Video size={16} className="mr-2" />
-                  添加视频
-                </Button>
-                <Button type="submit" className="w-32">
-                  {editIndex === -1 ? '发布' : '更新'}
+      <div className="space-y-8">
+        {entries.map((entry) => (
+          <article key={entry.id} className="p-6 bg-white rounded-lg border border-gray-100">
+            <header className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-medium mb-2">{entry.title}</h2>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={14} />
+                    {entry.date}
+                  </span>
+                  <span className="px-2 py-1 bg-gray-50 rounded">{entry.category}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => handleLike(entry.id)}>
+                  👍 {entry.likes || 0}
                 </Button>
               </div>
-              {currentEntry.images.length > 0 && (
-                <div className="flex flex-wrap gap-4 mt-4">
-                  {currentEntry.images.map((url, index) => (
-                    <img key={index} src={url} alt={`预览图 ${index + 1}`} className="w-24 h-24 object-cover rounded" />
-                  ))}
-                </div>
-              )}
-              {currentEntry.videoUrl && renderVideoEmbed(currentEntry.videoUrl)}
-            </form>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-8">
-          {filteredEntries.map((entry, index) => (
-            <article key={entry.id} className="p-6 bg-white rounded-lg border border-gray-100">
-              <header className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-xl font-medium mb-2">{entry.title}</h2>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {entry.date}
-                    </span>
-                    <span className="px-2 py-1 bg-gray-50 rounded">{categories.find((c) => c.id === entry.category)?.name}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setCurrentEntry({ ...entries[index] });
-                      setEditIndex(index);
-                    }}
-                  >
-                    <Edit size={14} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const updatedEntries = entries.filter((_, i) => i !== index);
-                      setEntries(updatedEntries);
-                    }}
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </header>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
-              {entry.images?.length > 0 && (
-                <div className="flex flex-wrap gap-4 mt-4">
-                  {entry.images.map((url, idx) => (
-                    <img key={idx} src={url} alt={`图片 ${idx + 1}`} className="max-w-full h-auto rounded" />
-                  ))}
-                </div>
-              )}
-              {entry.videoUrl && renderVideoEmbed(entry.videoUrl)}
-            </article>
-          ))}
-        </div>
-      </main>
+            </header>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.content}</p>
+            {entry.images?.length > 0 && (
+              <div className="flex flex-wrap gap-4 mt-4">
+                {entry.images.map((url, idx) => (
+                  <img key={idx} src={url} alt={`图片 ${idx + 1}`} className="max-w-full h-auto rounded" />
+                ))}
+              </div>
+            )}
+            {entry.videoUrl && (
+              <div className="mt-4">
+                <iframe
+                  width="100%"
+                  height="400"
+                  src={entry.videoUrl}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold">评论:</h3>
+              <ul>
+                {entry.comments?.map((comment, index) => (
+                  <li key={index} className="mt-2">
+                    <p>{comment.text}</p>
+                  </li>
+                ))}
+              </ul>
+              <textarea
+                value={currentComment}
+                onChange={(e) => setCurrentComment(e.target.value)}
+                className="w-full p-2 mt-2 border rounded-lg"
+                placeholder="写下你的评论..."
+              />
+              <Button
+                type="button"
+                onClick={() => handleCommentSubmit(entry.id)}
+                className="mt-2"
+              >
+                提交评论
+              </Button>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

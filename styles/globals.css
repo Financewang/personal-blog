@@ -1,0 +1,103 @@
+/* Reset some basic styles */
+body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, input, button {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1.6;
+}
+
+a {
+  text-decoration: none;
+  color: #0070f3;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Navigation bar */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 2rem;
+  background-color: #0070f3;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+nav ul li {
+  margin: 0;
+}
+
+nav ul li a, nav ul li button {
+  color: white;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+nav ul li button:hover, nav ul li a:hover {
+  text-decoration: underline;
+}
+
+/* Form styles */
+form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input, button {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+button {
+  background: #0070f3;
+  color: white;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #005bb5;
+}
+
+/* Main content layout */
+main {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+/* Page title */
+h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-top: 2rem;
+}
