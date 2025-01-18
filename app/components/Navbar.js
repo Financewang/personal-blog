@@ -1,49 +1,50 @@
+import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext'; // 确保路径正确
-import { useRouter } from 'next/router';
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.push('/'); // 注销后跳转到首页
-  };
+  const { isAuthenticated, logout } = useAuth(); // 判断是否登录
 
   return (
-    <nav style={{ background: '#0070f3', padding: '1rem', color: 'white' }}>
-      <ul style={{ display: 'flex', listStyle: 'none', gap: '1rem', margin: 0 }}>
+    <nav style={{ backgroundColor: '#0070f3', color: 'white', padding: '1rem' }}>
+      <ul style={{ display: 'flex', justifyContent: 'space-between', listStyle: 'none', margin: 0 }}>
+        <li>
+          <Link href="/">
+            <a style={{ color: 'white', textDecoration: 'none' }}>Home</a>
+          </Link>
+        </li>
+
         {isAuthenticated ? (
           <>
             <li>
+              <Link href="/dashboard">
+                <a style={{ color: 'white', textDecoration: 'none' }}>Dashboard</a>
+              </Link>
+            </li>
+            <li>
+              <Link href="/create-post">
+                <a style={{ color: 'white', textDecoration: 'none' }}>Create Post</a>
+              </Link>
+            </li>
+            <li>
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 style={{
                   background: 'none',
                   border: 'none',
                   color: 'white',
                   cursor: 'pointer',
+                  textDecoration: 'underline',
                 }}
               >
                 Logout
               </button>
             </li>
-            <li>
-              <Link href="/dashboard">
-                <a style={{ color: 'white' }}>Dashboard</a>
-              </Link>
-            </li>
-            <li>
-              <Link href="/create-post">
-                <a style={{ color: 'white' }}>Create Post</a>
-              </Link>
-            </li>
           </>
         ) : (
           <li>
-            <Link href="/login">
-              <a style={{ color: 'white' }}>Login</a>
+            <Link href="/about">
+              <a style={{ color: 'white', textDecoration: 'none' }}>About</a>
             </Link>
           </li>
         )}

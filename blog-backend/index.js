@@ -105,15 +105,18 @@ app.get('/api/posts', async (req, res) => {
 // 点赞功能
 app.post('/api/posts/:id/like', async (req, res) => {
   try {
+    console.log('收到点赞请求，文章ID:', req.params.id); // 添加调试日志
     const post = await Post.findById(req.params.id);
     if (!post) {
+      console.log('文章不存在'); // 日志记录
       return res.status(404).json({ message: '文章不存在' });
     }
     post.likes += 1;
     await post.save();
+    console.log('点赞成功，当前点赞数:', post.likes); // 日志记录
     res.status(200).json(post);
   } catch (err) {
-    console.error('点赞时发生错误:', err);
+    console.error('点赞时发生错误:', err); // 错误日志
     res.status(500).json({ message: '点赞失败' });
   }
 });
@@ -121,12 +124,15 @@ app.post('/api/posts/:id/like', async (req, res) => {
 // 评论功能
 app.post('/api/posts/:id/comments', async (req, res) => {
   try {
+    console.log('收到评论请求，文章ID:', req.params.id, '评论内容:', req.body.text);
     const post = await Post.findById(req.params.id);
     if (!post) {
+      console.log('文章不存在');
       return res.status(404).json({ message: '文章不存在' });
     }
     post.comments.push({ text: req.body.text });
     await post.save();
+    console.log('评论成功，当前评论数:', post.comments.length);
     res.status(200).json(post);
   } catch (err) {
     console.error('评论时发生错误:', err);
