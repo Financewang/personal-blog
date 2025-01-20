@@ -2,8 +2,11 @@ import axios from 'axios';
 
 // 创建 axios 实例
 const apiClient = axios.create({
-    baseURL: 'http://localhost:5000/api', // 替换为你的后端 API 基础地址
+    baseURL: 'https://blog-backend-blond-delta.vercel.app/api', // 更新为 Vercel 部署的地址
     timeout: 5000, // 设置请求超时时间（可选）
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
 
 // 添加请求拦截器
@@ -32,7 +35,13 @@ apiClient.interceptors.response.use(
     (error) => {
         // 响应错误处理
         if (error.response) {
-            console.error(`API 错误: ${error.response.status} - ${error.response.data.message}`);
+            console.error(`API 错误: ${error.response.status} - ${error.response.data?.message}`);
+            
+            // 处理 401 未授权错误
+            if (error.response.status === 401) {
+                localStorage.removeItem('token'); // 清除无效的 token
+                // 如果需要，可以在这里添加重定向到登录页的逻辑
+            }
         } else if (error.request) {
             console.error('请求未收到响应:', error.request);
         } else {
