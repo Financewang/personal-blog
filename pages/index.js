@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import apiClient from '../utils/axios';
+import apiClient from '../app/utils/axios';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
