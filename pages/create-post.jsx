@@ -19,6 +19,8 @@ const CreatePost = () => {
     }
 
     setIsLoading(true); // 设置加载状态
+    setError(''); // 清空错误信息
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts`, {
         method: 'POST',
@@ -37,7 +39,8 @@ const CreatePost = () => {
       // 成功后跳转到仪表板或首页
       router.push('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('创建博客时发生错误:', err);
+      setError(err.message || '创建博客时出错，请稍后重试');
     } finally {
       setIsLoading(false); // 重置加载状态
     }
@@ -48,7 +51,7 @@ const CreatePost = () => {
       <h1>创建新博客</h1>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="title">标题</label>
+          <label htmlFor="title" style={{ fontWeight: 'bold', display: 'block' }}>标题</label>
           <input
             id="title"
             type="text"
@@ -59,11 +62,13 @@ const CreatePost = () => {
               width: '100%',
               padding: '0.5rem',
               marginTop: '0.5rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
             }}
           />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="content">内容</label>
+          <label htmlFor="content" style={{ fontWeight: 'bold', display: 'block' }}>内容</label>
           <textarea
             id="content"
             value={content}
@@ -74,10 +79,12 @@ const CreatePost = () => {
               height: '200px',
               padding: '0.5rem',
               marginTop: '0.5rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
             }}
           ></textarea>
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p style={{ color: 'red', marginTop: '0.5rem' }}>{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
@@ -86,7 +93,8 @@ const CreatePost = () => {
             backgroundColor: '#0070f3',
             color: 'white',
             border: 'none',
-            cursor: 'pointer',
+            borderRadius: '4px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
           }}
         >
           {isLoading ? '创建中...' : '创建博客'}

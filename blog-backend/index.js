@@ -1,41 +1,70 @@
+// 加载 dotenv 并指定路径
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env.local') });
+
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const Post = require('./models/Post');
-const User = require('./models/User');
+const Post = require('./models/post.js'); // 确保文件路径正确
+const User = require('./models/user.js'); // 确保文件路径正确
+
 const app = express();
 
-app.use(cors());
+// 调试环境变量加载
+console.log('🔍 环境变量加载检查：');
+console.log('MONGO_URI:', process.env.MONGO_URI || '未定义');
+console.log('JWT_SECRET:', process.env.JWT_SECRET || '未定义');
+console.log('PORT:', process.env.PORT || '未定义');
+
+// 检查环境变量
+if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
+  console.error('❌ Error: 环境变量 MONGO_URI 或 JWT_SECRET 未定义');
+  process.exit(1);
+}
+
+// 配置 CORS
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// 配置 Express 解析 JSON 数据
 app.use(express.json());
 
 // 连接到 MongoDB 数据库
-mongoose.connect('mongodb://localhost:27017/blog')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Failed to connect to MongoDB', err));
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    retryWrites: true,
+    w: 'majority',
+  })
+  .then(() => console.log('✅ Connected to MongoDB Atlas'))
+  .catch((err) => {
+    console.error('❌ Failed to connect to MongoDB Atlas:', err.message);
+    process.exit(1);
+  });
 
 // 用户注册接口
 app.post('/api/auth/register', async (req, res) => {
   const { username, password } = req.body;
-  console.log(`注册请求: 用户名 - ${username}, 密码 - ${password}`);
-  
+
   try {
-    // 检查用户名是否已经存在
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      console.log('用户名已存在');
       return res.status(400).json({ message: '用户名已存在' });
     }
 
-    // 创建新用户
     const newUser = new User({ username, password });
     await newUser.save();
-    
-    console.log('用户注册成功');
+    console.log(`✅ 用户 ${username} 注册成功`);
     res.status(201).json({ message: '注册成功' });
   } catch (err) {
-    console.error('注册过程中出错:', err);
+    console.error('❌ 注册错误:', err);
     res.status(500).json({ message: '服务器错误' });
   }
 });
@@ -43,38 +72,26 @@ app.post('/api/auth/register', async (req, res) => {
 // 用户登录接口
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  console.log(`收到登录请求: 用户名 - ${username}, 密码 - ${password}`);
-  
+
   try {
-    // 查找用户
     const user = await User.findOne({ username });
     if (!user) {
-      console.log('用户不存在:', username);
       return res.status(400).json({ message: '用户不存在' });
     }
 
-    console.log('数据库中的密码哈希:', user.password);
-    console.log('用户输入的密码:', password);
-
-    // 验证密码
-    const validPassword = await bcrypt.compare(password, user.password);
-    console.log('密码验证结果:', validPassword);
-
-    if (!validPassword) {
+    if (user.password !== password) {
+      console.log('❌ 密码错误');
       return res.status(400).json({ message: '密码错误' });
     }
 
-    // 生成 JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      'your_secret_key',
-      { expiresIn: '1h' }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
 
-    console.log('登录成功，生成token:', token);
+    console.log(`✅ 用户 ${username} 登录成功`);
     res.json({ token });
   } catch (err) {
-    console.error('登录过程出现错误:', err);
+    console.error('❌ 登录错误:', err);
     res.status(500).json({ message: '服务器错误' });
   }
 });
@@ -84,9 +101,10 @@ app.post('/api/posts', async (req, res) => {
   try {
     const post = new Post(req.body);
     await post.save();
+    console.log(`✅ 文章创建成功: ${post.title}`);
     res.status(201).send(post);
   } catch (err) {
-    console.error('创建文章时发生错误:', err);
+    console.error('❌ 创建文章错误:', err);
     res.status(400).send(err.message);
   }
 });
@@ -94,10 +112,11 @@ app.post('/api/posts', async (req, res) => {
 // 获取所有文章 API
 app.get('/api/posts', async (req, res) => {
   try {
-    const posts = await Post.find();
+    const posts = await Post.find().sort({ createdAt: -1 });
+    console.log('✅ 获取文章列表成功');
     res.status(200).send(posts);
   } catch (err) {
-    console.error('获取文章时发生错误:', err);
+    console.error('❌ 获取文章错误:', err);
     res.status(500).send(err.message);
   }
 });
@@ -105,18 +124,16 @@ app.get('/api/posts', async (req, res) => {
 // 点赞功能
 app.post('/api/posts/:id/like', async (req, res) => {
   try {
-    console.log('收到点赞请求，文章ID:', req.params.id); // 添加调试日志
     const post = await Post.findById(req.params.id);
     if (!post) {
-      console.log('文章不存在'); // 日志记录
       return res.status(404).json({ message: '文章不存在' });
     }
     post.likes += 1;
     await post.save();
-    console.log('点赞成功，当前点赞数:', post.likes); // 日志记录
+    console.log(`✅ 文章 ${post.title} 点赞成功`);
     res.status(200).json(post);
   } catch (err) {
-    console.error('点赞时发生错误:', err); // 错误日志
+    console.error('❌ 点赞错误:', err);
     res.status(500).json({ message: '点赞失败' });
   }
 });
@@ -124,18 +141,16 @@ app.post('/api/posts/:id/like', async (req, res) => {
 // 评论功能
 app.post('/api/posts/:id/comments', async (req, res) => {
   try {
-    console.log('收到评论请求，文章ID:', req.params.id, '评论内容:', req.body.text);
     const post = await Post.findById(req.params.id);
     if (!post) {
-      console.log('文章不存在');
       return res.status(404).json({ message: '文章不存在' });
     }
     post.comments.push({ text: req.body.text });
     await post.save();
-    console.log('评论成功，当前评论数:', post.comments.length);
+    console.log(`✅ 文章 ${post.title} 评论成功`);
     res.status(200).json(post);
   } catch (err) {
-    console.error('评论时发生错误:', err);
+    console.error('❌ 评论错误:', err);
     res.status(500).json({ message: '评论失败' });
   }
 });
@@ -147,4 +162,6 @@ app.get('/', (req, res) => {
 
 // 启动服务器
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import apiClient from '@/app/utils/axios';
+import apiClient from '../utils/axios';  // 修改这里的导入路径
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -30,8 +30,8 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 分类导航 */}
-      <div className="mb-8">
-        <div className="flex space-x-4 text-lg">
+      <div className="mb-8 overflow-x-auto">
+        <div className="flex space-x-4 text-lg md:justify-center">
           {['全部', '个人记录', '财务管理', '创业', '思考'].map(category => (
             <button
               key={category}
@@ -49,7 +49,7 @@ export default function Home() {
       </div>
 
       {/* 文章列表 */}
-      <div className="grid gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredPosts.map((post) => (
           <article 
             key={post._id} 

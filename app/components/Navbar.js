@@ -6,22 +6,53 @@ const Navbar = () => {
   const { isAuthenticated, logout } = useAuth(); // 判断是否登录
 
   return (
-    <nav style={{ backgroundColor: '#0070f3', color: 'white', padding: '1rem' }}>
-      <ul style={{ display: 'flex', justifyContent: 'space-between', listStyle: 'none', margin: 0 }}>
-        <li>
+    <nav
+      style={{
+        backgroundColor: '#0070f3',
+        color: 'white',
+        padding: '1rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}
+    >
+      <ul style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0 }}>
+        <li style={{ marginRight: '1rem' }}>
           <Link href="/">
             <a style={{ color: 'white', textDecoration: 'none' }}>Home</a>
           </Link>
         </li>
+        <li style={{ marginRight: '1rem' }}>
+          <Link href="/personal">
+            <a style={{ color: 'white', textDecoration: 'none' }}>个人记录</a>
+          </Link>
+        </li>
+        <li style={{ marginRight: '1rem' }}>
+          <Link href="/finance">
+            <a style={{ color: 'white', textDecoration: 'none' }}>财务管理</a>
+          </Link>
+        </li>
+        <li style={{ marginRight: '1rem' }}>
+          <Link href="/business">
+            <a style={{ color: 'white', textDecoration: 'none' }}>创业</a>
+          </Link>
+        </li>
+        <li style={{ marginRight: '1rem' }}>
+          <Link href="/thoughts">
+            <a style={{ color: 'white', textDecoration: 'none' }}>思考</a>
+          </Link>
+        </li>
+      </ul>
 
+      <ul style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0 }}>
         {isAuthenticated ? (
           <>
-            <li>
+            <li style={{ marginRight: '1rem' }}>
               <Link href="/dashboard">
                 <a style={{ color: 'white', textDecoration: 'none' }}>Dashboard</a>
               </Link>
             </li>
-            <li>
+            <li style={{ marginRight: '1rem' }}>
               <Link href="/create-post">
                 <a style={{ color: 'white', textDecoration: 'none' }}>Create Post</a>
               </Link>
@@ -43,8 +74,8 @@ const Navbar = () => {
           </>
         ) : (
           <li>
-            <Link href="/about">
-              <a style={{ color: 'white', textDecoration: 'none' }}>About</a>
+            <Link href="/login">
+              <a style={{ color: 'white', textDecoration: 'none' }}>Login</a>
             </Link>
           </li>
         )}

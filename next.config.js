@@ -1,6 +1,9 @@
 const path = require('path');
 
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -8,4 +11,4 @@ module.exports = {
     };
     return config;
   },
-};
+}
